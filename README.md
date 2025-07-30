@@ -1,1 +1,0 @@
-# pinecone-initial
