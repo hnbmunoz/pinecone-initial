@@ -112,16 +112,19 @@ const swaggerDocument = {
                   audio: {
                     type: "string",
                     format: "binary",
-                    description: "Audio file to transcribe (mp3, wav, m4a, flac, ogg, webm, mp4)"
+                    description: "Audio file to transcribe (mp3, wav, m4a, flac, ogg, webm, mp4). Maximum file size: 100MB"
                   },
                   model: {
                     type: "string",
-                    description: "Whisper model to use (optional, defaults to 'base')",
-                    enum: ["tiny", "base", "small", "medium", "large"]
+                    description: "Whisper model to use (defaults to 'base')",
+                    enum: ["tiny", "base", "small", "medium", "large"],
+                    default: "base",
+                    example: "base"
                   },
                   language: {
                     type: "string",
-                    description: "Language code (optional, auto-detect if not specified)"
+                    description: "Language code (optional, returns 'auto-detect' if not specified)",
+                    example: "en"
                   }
                 },
                 required: ["audio"]
@@ -137,20 +140,128 @@ const swaggerDocument = {
                 schema: {
                   type: "object",
                   properties: {
-                    transcription: { type: "string" },
-                    duration: { type: "number" },
-                    model: { type: "string" },
-                    language: { type: "string" }
-                  }
+                    transcription: {
+                      type: "string",
+                      description: "The transcribed text from the audio file"
+                    },
+                    model: {
+                      type: "string",
+                      description: "The whisper model used for transcription",
+                      enum: ["tiny", "base", "small", "medium", "large"]
+                    },
+                    language: {
+                      type: "string",
+                      description: "Language used for transcription or 'auto-detect'"
+                    },
+                    originalFilename: {
+                      type: "string",
+                      description: "Original name of the uploaded audio file"
+                    }
+                  },
+                  required: ["transcription", "model", "language", "originalFilename"]
+                },
+                example: {
+                  transcription: "Hello, this is a sample transcription of the audio file.",
+                  model: "base",
+                  language: "auto-detect",
+                  originalFilename: "sample-audio.mp3"
                 }
               }
             }
           },
           400: {
-            description: "Bad request - invalid file or parameters"
+            description: "Bad request - invalid file or parameters",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    error: {
+                      type: "string",
+                      enum: [
+                        "No audio file provided",
+                        "Only audio files are allowed!",
+                        "Invalid model. Use: tiny, base, small, medium, or large",
+                        "File too large"
+                      ]
+                    }
+                  }
+                },
+                examples: {
+                  noFile: {
+                    summary: "No audio file provided",
+                    value: {
+                      error: "No audio file provided"
+                    }
+                  },
+                  invalidFileType: {
+                    summary: "Invalid file type",
+                    value: {
+                      error: "Only audio files are allowed!"
+                    }
+                  },
+                  invalidModel: {
+                    summary: "Invalid model parameter",
+                    value: {
+                      error: "Invalid model. Use: tiny, base, small, medium, or large"
+                    }
+                  },
+                  fileTooLarge: {
+                    summary: "File exceeds size limit",
+                    value: {
+                      error: "File too large"
+                    }
+                  }
+                }
+              }
+            }
           },
           500: {
-            description: "Internal server error"
+            description: "Internal server error - transcription process failed",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    error: {
+                      type: "string",
+                      enum: [
+                        "Failed to start transcription process",
+                        "Transcription failed",
+                        "Internal server error"
+                      ]
+                    },
+                    details: {
+                      type: "string",
+                      description: "Additional error details"
+                    }
+                  }
+                },
+                examples: {
+                  whisperNotInstalled: {
+                    summary: "Whisper.cpp not installed",
+                    value: {
+                      error: "Failed to start transcription process",
+                      details: "Make sure whisper.cpp is installed and accessible"
+                    }
+                  },
+                  transcriptionFailed: {
+                    summary: "Transcription process failed",
+                    value: {
+                      error: "Transcription failed",
+                      details: "Whisper process exited with error code"
+                    }
+                  },
+                  internalError: {
+                    summary: "General internal error",
+                    value: {
+                      error: "Internal server error",
+                      details: "An unexpected error occurred"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
