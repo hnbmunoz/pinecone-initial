@@ -302,6 +302,7 @@ app.post("/transcribe", upload.single('audio'), async (req, res) => {
       '-m', path.join(modelsPath, `ggml-${model}.bin`), // Model path
       '-f', audioFile.path, // Input file
       '--output-txt', // Output as text
+      '--diarize', // Enable speaker diarization
       '--no-timestamps' // Remove timestamps for cleaner output
     ];
 
