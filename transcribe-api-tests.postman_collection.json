@@ -1,0 +1,533 @@
+{
+  "info": {
+    "name": "Transcribe API Tests",
+    "description": "Complete test collection for the /transcribe endpoint",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Basic Tests",
+      "item": [
+        {
+          "name": "1. Basic Transcription (Minimal Parameters)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "audio",
+                  "type": "file",
+                  "src": [],
+                  "description": "Upload an audio file (mp3, wav, m4a, etc.)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/transcribe",
+              "host": ["{{base_url}}"],
+              "path": ["transcribe"]
+            },
+            "description": "Test basic transcription with only audio file, using default model (base) and auto-detect language"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has required fields\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('transcription');",
+                  "    pm.expect(jsonData).to.have.property('model');",
+                  "    pm.expect(jsonData).to.have.property('language');",
+                  "    pm.expect(jsonData).to.have.property('originalFilename');",
+                  "});",
+                  "",
+                  "pm.test(\"Model defaults to base\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.model).to.eql('base');",
+                  "});",
+                  "",
+                  "pm.test(\"Language defaults to auto-detect\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.language).to.eql('auto-detect');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "2. Transcription with Specific Model",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "audio",
+                  "type": "file",
+                  "src": [],
+                  "description": "Upload an audio file"
+                },
+                {
+                  "key": "model",
+                  "value": "tiny",
+                  "type": "text",
+                  "description": "Use tiny model for faster processing"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/transcribe",
+              "host": ["{{base_url}}"],
+              "path": ["transcribe"]
+            },
+            "description": "Test transcription with specific model (tiny)"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Model is set to tiny\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.model).to.eql('tiny');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "3. Transcription with Language Specification",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "audio",
+                  "type": "file",
+                  "src": [],
+                  "description": "Upload an audio file"
+                },
+                {
+                  "key": "model",
+                  "value": "base",
+                  "type": "text"
+                },
+                {
+                  "key": "language",
+                  "value": "en",
+                  "type": "text",
+                  "description": "Specify English language"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/transcribe",
+              "host": ["{{base_url}}"],
+              "path": ["transcribe"]
+            },
+            "description": "Test transcription with specific language"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Language is set to en\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.language).to.eql('en');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "4. All Parameters Specified",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "audio",
+                  "type": "file",
+                  "src": [],
+                  "description": "Upload an audio file"
+                },
+                {
+                  "key": "model",
+                  "value": "large",
+                  "type": "text",
+                  "description": "Use large model for best accuracy"
+                },
+                {
+                  "key": "language",
+                  "value": "en",
+                  "type": "text",
+                  "description": "Specify English language"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/transcribe",
+              "host": ["{{base_url}}"],
+              "path": ["transcribe"]
+            },
+            "description": "Test transcription with all parameters specified"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"All parameters are correctly set\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.model).to.eql('large');",
+                  "    pm.expect(jsonData.language).to.eql('en');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Error Tests",
+      "item": [
+        {
+          "name": "5. Missing Audio File",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "model",
+                  "value": "base",
+                  "type": "text",
+                  "description": "Model without audio file"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/transcribe",
+              "host": ["{{base_url}}"],
+              "path": ["transcribe"]
+            },
+            "description": "Test error handling when no audio file is provided"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message for missing audio file\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error).to.eql('No audio file provided');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "6. Invalid Model",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "audio",
+                  "type": "file",
+                  "src": [],
+                  "description": "Upload an audio file"
+                },
+                {
+                  "key": "model",
+                  "value": "invalid_model",
+                  "type": "text",
+                  "description": "Invalid model name"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/transcribe",
+              "host": ["{{base_url}}"],
+              "path": ["transcribe"]
+            },
+            "description": "Test error handling for invalid model"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message for invalid model\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error).to.include('Invalid model');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Model Comparison Tests",
+      "item": [
+        {
+          "name": "Tiny Model Test",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "audio",
+                  "type": "file",
+                  "src": [],
+                  "description": "Upload the same audio file for comparison"
+                },
+                {
+                  "key": "model",
+                  "value": "tiny",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/transcribe",
+              "host": ["{{base_url}}"],
+              "path": ["transcribe"]
+            },
+            "description": "Test with tiny model (fastest, least accurate)"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Response time is acceptable for tiny model\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(30000);",
+                  "});",
+                  "",
+                  "pm.test(\"Model is tiny\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.model).to.eql('tiny');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Base Model Test",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "audio",
+                  "type": "file",
+                  "src": [],
+                  "description": "Upload the same audio file for comparison"
+                },
+                {
+                  "key": "model",
+                  "value": "base",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/transcribe",
+              "host": ["{{base_url}}"],
+              "path": ["transcribe"]
+            },
+            "description": "Test with base model (balanced speed/accuracy)"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Model is base\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.model).to.eql('base');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Large Model Test",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "audio",
+                  "type": "file",
+                  "src": [],
+                  "description": "Upload the same audio file for comparison"
+                },
+                {
+                  "key": "model",
+                  "value": "large",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/transcribe",
+              "host": ["{{base_url}}"],
+              "path": ["transcribe"]
+            },
+            "description": "Test with large model (most accurate, slowest)"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Model is large\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.model).to.eql('large');",
+                  "});",
+                  "",
+                  "pm.test(\"Response time is reasonable for large model\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(120000);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/healthcheck",
+          "host": ["{{base_url}}"],
+          "path": ["healthcheck"]
+        },
+        "description": "Check if the server is running"
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Health check response\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.status).to.eql('OK');",
+              "    pm.expect(jsonData.application).to.eql('PineCone App');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "exec": [
+          "// Set timestamp for each request",
+          "pm.environment.set('timestamp', new Date().toISOString());"
+        ],
+        "type": "text/javascript"
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "exec": [
+          "// Global test to log response time",
+          "console.log('Response time: ' + pm.response.responseTime + 'ms');"
+        ],
+        "type": "text/javascript"
+      }
+    }
+  ]
+}

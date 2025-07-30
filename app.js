@@ -20,7 +20,6 @@ const cohere = new CohereClient({
 // Pinecone configuration
 const pinecone = new Pinecone({
   apiKey: process.env.PINECONE_API,
-  // controllerHostUrl: process.env.PINECONE_HOST,
 });
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -183,9 +182,13 @@ app.post("/transcribe", upload.single('audio'), async (req, res) => {
       return res.status(400).json({ error: "Invalid model. Use: tiny, base, small, medium, or large" });
     }
 
+    // Get whisper executable path from environment or use default
+    const whisperPath = process.env.WHISPER_PATH || './whisper.cpp/bin/whisper-cli';
+    const modelsPath = process.env.WHISPER_MODELS_PATH || './whisper.cpp/models';
+    
     // Build whisper command
     const whisperArgs = [
-      '-m', `models/ggml-${model}.bin`, // Model path
+      '-m', path.join(modelsPath, `ggml-${model}.bin`), // Model path
       '-f', audioFile.path, // Input file
       '--output-txt', // Output as text
       '--no-timestamps' // Remove timestamps for cleaner output
@@ -197,7 +200,7 @@ app.post("/transcribe", upload.single('audio'), async (req, res) => {
     }
 
     // Execute whisper.cpp
-    const whisperProcess = spawn('./whisper.cpp/main', whisperArgs);
+    const whisperProcess = spawn(whisperPath, whisperArgs);
     
     let transcription = '';
     let errorOutput = '';
@@ -312,26 +315,18 @@ app.get("/movies", async (req, res) => {
     console.log('response ', response?.body)
     const vector = response?.embeddings[0]; 
 
-    // Query Pinecone index
-    // const queryResponse = await index.query({
-    //   topK: 10,
-    //   vector,
-    //   includeMetadata: true,
-    // });
+   
     if (!vector) {
       res.status(500).json({ errors: `"No embedding vector returned."` });
       return
-      // throw new Error("No embedding vector returned.");
     }
 
     const queryResponse = await index.query({
       topK: 10,
-      // vector: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8],
       vector: vector,
       includeValues: false,
       includeMetadata: true,
     });
-    console.log("Just Log1")
     res.json(queryResponse);
   } catch (error) {
     console.error("Error querying Pinecone:", error);
@@ -340,11 +335,6 @@ app.get("/movies", async (req, res) => {
 });
 
 app.get("/healthcheck", (req, res) => {
-  // const response = await cohere.embed({
-  //   texts: ["Test String"],
-  //   model: 'embed-english-v3.0', // or embed-english-light-v3.1
-  //   inputType: 'search_document', // or 'search_query', depending on use case
-  // });
   res.status(200).send({
     status: "OK",
     application: "PineCone App",
