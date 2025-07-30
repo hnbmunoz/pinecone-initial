@@ -116,10 +116,10 @@ const swaggerDocument = {
                   },
                   model: {
                     type: "string",
-                    description: "Whisper model to use (defaults to 'base')",
+                    description: "Whisper model to use (defaults to 'small')",
                     enum: ["tiny", "base", "small", "medium", "large"],
-                    default: "base",
-                    example: "base"
+                    default: "small",
+                    example: "small"
                   },
                   language: {
                     type: "string",
@@ -162,7 +162,7 @@ const swaggerDocument = {
                 },
                 example: {
                   transcription: "Hello, this is a sample transcription of the audio file.",
-                  model: "base",
+                  model: "small",
                   language: "auto-detect",
                   originalFilename: "sample-audio.mp3"
                 }
@@ -282,7 +282,7 @@ app.post("/transcribe", upload.single('audio'), async (req, res) => {
     }
 
     const audioFile = req.file;
-    const model = req.body.model || 'base';
+    const model = req.body.model || 'small';
     const language = req.body.language;
     
     // Validate model
@@ -373,32 +373,9 @@ app.post("/transcribe", upload.single('audio'), async (req, res) => {
 });
 
 app.get("/movies", async (req, res) => {
-  // Test this next
-  //   So if you're using:
-
-  // OpenAI (text-embedding-3-small) → dimension 1536
-
-  // Gemini (embedding-001) → dimension 768
-
-  // Cohere → usually 768 or 1024
-
-  // You must configure Pinecone's index to match the model you're embedding with.
+  
 
   try {
-    // Generate vector embedding using OpenAI
-    // const embeddingResponse = await openai.embeddings.create({
-    //   model: "text-embedding-3-small", // or whatever matches your index dimension
-    //   input: "",
-    // });
-
-    // const vector = embeddingResponse.data[0].embedding;
-    // const embeddingModel = genAI.getGenerativeModel({ model: "embedding-001" });
-    // const embeddingResponse = await embeddingModel.embedContent({
-    //   content: { parts: [{ text: "" }] },
-    // });
-
-    // const vector = embeddingResponse.embedding.values;
-
     const movieRecord = {
       id: "13",
       title: "Barbie",
