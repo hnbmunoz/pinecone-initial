@@ -3,7 +3,10 @@ const swaggerUi = require("swagger-ui-express");
 const { Pinecone } = require("@pinecone-database/pinecone");
 const { OpenAI } = require("openai");
 const { CohereClient } = require("cohere-ai");
-
+const multer = require("multer");
+const { spawn } = require("child_process");
+const fs = require("fs");
+const path = require("path");
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 require("dotenv").config();
@@ -26,6 +29,23 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const index = pinecone.Index("sample-movies");
 
 app.use(express.json());
+
+// Configure multer for file uploads
+const upload = multer({
+  dest: 'uploads/',
+  fileFilter: (req, file, cb) => {
+    // Accept audio files
+    if (file.mimetype.startsWith('audio/') ||
+        file.originalname.match(/\.(mp3|wav|m4a|flac|ogg|webm|mp4)$/i)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only audio files are allowed!'), false);
+    }
+  },
+  limits: {
+    fileSize: 100 * 1024 * 1024 // 100MB limit
+  }
+});
 
 // Swagger setup
 const swaggerDocument = {
@@ -79,6 +99,62 @@ const swaggerDocument = {
           },
         },
       }
+    },
+    "/transcribe": {
+      post: {
+        summary: "Transcribe audio file using whisper.cpp",
+        tags: ["Audio"],
+        requestBody: {
+          content: {
+            "multipart/form-data": {
+              schema: {
+                type: "object",
+                properties: {
+                  audio: {
+                    type: "string",
+                    format: "binary",
+                    description: "Audio file to transcribe (mp3, wav, m4a, flac, ogg, webm, mp4)"
+                  },
+                  model: {
+                    type: "string",
+                    description: "Whisper model to use (optional, defaults to 'base')",
+                    enum: ["tiny", "base", "small", "medium", "large"]
+                  },
+                  language: {
+                    type: "string",
+                    description: "Language code (optional, auto-detect if not specified)"
+                  }
+                },
+                required: ["audio"]
+              }
+            }
+          }
+        },
+        responses: {
+          200: {
+            description: "Successful transcription",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    transcription: { type: "string" },
+                    duration: { type: "number" },
+                    model: { type: "string" },
+                    language: { type: "string" }
+                  }
+                }
+              }
+            }
+          },
+          400: {
+            description: "Bad request - invalid file or parameters"
+          },
+          500: {
+            description: "Internal server error"
+          }
+        }
+      }
     }
 
   },
@@ -87,6 +163,100 @@ const swaggerDocument = {
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 
+
+// Transcribe endpoint
+app.post("/transcribe", upload.single('audio'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No audio file provided" });
+    }
+
+    const audioFile = req.file;
+    const model = req.body.model || 'base';
+    const language = req.body.language;
+    
+    // Validate model
+    const validModels = ['tiny', 'base', 'small', 'medium', 'large'];
+    if (!validModels.includes(model)) {
+      // Clean up uploaded file
+      fs.unlinkSync(audioFile.path);
+      return res.status(400).json({ error: "Invalid model. Use: tiny, base, small, medium, or large" });
+    }
+
+    // Build whisper command
+    const whisperArgs = [
+      '-m', `models/ggml-${model}.bin`, // Model path
+      '-f', audioFile.path, // Input file
+      '--output-txt', // Output as text
+      '--no-timestamps' // Remove timestamps for cleaner output
+    ];
+
+    // Add language if specified
+    if (language) {
+      whisperArgs.push('-l', language);
+    }
+
+    // Execute whisper.cpp
+    const whisperProcess = spawn('./whisper.cpp/main', whisperArgs);
+    
+    let transcription = '';
+    let errorOutput = '';
+
+    whisperProcess.stdout.on('data', (data) => {
+      transcription += data.toString();
+    });
+
+    whisperProcess.stderr.on('data', (data) => {
+      errorOutput += data.toString();
+    });
+
+    whisperProcess.on('close', (code) => {
+      // Clean up uploaded file
+      fs.unlinkSync(audioFile.path);
+      
+      // Also clean up any generated text files
+      const txtFile = audioFile.path + '.txt';
+      if (fs.existsSync(txtFile)) {
+        const fileContent = fs.readFileSync(txtFile, 'utf8');
+        transcription = fileContent.trim();
+        fs.unlinkSync(txtFile);
+      }
+
+      if (code === 0) {
+        res.json({
+          transcription: transcription.trim(),
+          model: model,
+          language: language || 'auto-detect',
+          originalFilename: audioFile.originalname
+        });
+      } else {
+        console.error('Whisper error:', errorOutput);
+        res.status(500).json({
+          error: "Transcription failed",
+          details: errorOutput || "Unknown error occurred"
+        });
+      }
+    });
+
+    whisperProcess.on('error', (error) => {
+      console.error('Failed to start whisper process:', error);
+      // Clean up uploaded file
+      fs.unlinkSync(audioFile.path);
+      res.status(500).json({
+        error: "Failed to start transcription process",
+        details: "Make sure whisper.cpp is installed and accessible"
+      });
+    });
+
+  } catch (error) {
+    console.error('Transcription error:', error);
+    // Clean up uploaded file if it exists
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    res.status(500).json({ error: "Internal server error", details: error.message });
+  }
+});
 
 app.get("/movies", async (req, res) => {
   // Test this next
