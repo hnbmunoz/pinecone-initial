@@ -82,20 +82,132 @@ const swaggerDocument = {
     },
     "/healthcheck": {
       get: {
-        summary: "Get all health check",
+        summary: "Health check endpoint",
         tags: ["System"],
         responses: {
           200: {
-            description: "Successful response",
+            description: "Successful health check response",
             content: {
               "application/json": {
                 schema: {
-                  type: "string",
-                  
+                  type: "object",
+                  properties: {
+                    status: {
+                      type: "string",
+                      description: "Application status",
+                      example: "OK"
+                    },
+                    application: {
+                      type: "string",
+                      description: "Application name",
+                      example: "PineCone App"
+                    },
+                    timeStamp: {
+                      type: "string",
+                      format: "date-time",
+                      description: "Current timestamp",
+                      example: "2025-07-31T15:29:51.920Z"
+                    },
+                    environment: {
+                      type: "string",
+                      description: "Current environment",
+                      example: "development"
+                    }
+                  },
+                  required: ["status", "application", "timeStamp", "environment"]
                 },
+                example: {
+                  status: "OK",
+                  application: "PineCone App",
+                  timeStamp: "2025-07-31T15:29:51.920Z",
+                  environment: "development"
+                }
               },
             },
           },
+          503: {
+            description: "Service unavailable - health check failed",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    status: {
+                      type: "string",
+                      description: "Application status",
+                      example: "FAIL"
+                    },
+                    application: {
+                      type: "string",
+                      description: "Application name",
+                      example: "PineCone App"
+                    },
+                    timeStamp: {
+                      type: "string",
+                      format: "date-time",
+                      description: "Current timestamp",
+                      example: "2025-07-31T15:29:51.920Z"
+                    },
+                    environment: {
+                      type: "string",
+                      description: "Current environment",
+                      example: "development"
+                    },
+                    error: {
+                      type: "string",
+                      description: "Error message describing the failure",
+                      example: "Database connection failed"
+                    },
+                    details: {
+                      type: "object",
+                      description: "Additional error details",
+                      properties: {
+                        database: {
+                          type: "string",
+                          example: "disconnected"
+                        },
+                        pinecone: {
+                          type: "string",
+                          example: "connection timeout"
+                        }
+                      }
+                    }
+                  },
+                  required: ["status", "application", "timeStamp", "environment", "error"]
+                },
+                examples: {
+                  databaseFailure: {
+                    summary: "Database connection failure",
+                    value: {
+                      status: "FAIL",
+                      application: "PineCone App",
+                      timeStamp: "2025-07-31T15:29:51.920Z",
+                      environment: "development",
+                      error: "Database connection failed",
+                      details: {
+                        database: "disconnected",
+                        pinecone: "connection timeout"
+                      }
+                    }
+                  },
+                  serviceUnavailable: {
+                    summary: "External service unavailable",
+                    value: {
+                      status: "FAIL",
+                      application: "PineCone App",
+                      timeStamp: "2025-07-31T15:29:51.920Z",
+                      environment: "production",
+                      error: "External services unavailable",
+                      details: {
+                        openai: "API rate limit exceeded",
+                        cohere: "service temporarily unavailable"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
         },
       }
     },
@@ -427,7 +539,8 @@ app.get("/healthcheck", (req, res) => {
   res.status(200).send({
     status: "OK",
     application: "PineCone App",
-    timeStamp: new Date()
+    timeStamp: new Date(),
+    environment: process.env.NODE_ENV
   });
 });
 
